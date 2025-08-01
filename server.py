@@ -1,15 +1,14 @@
 import socket
 import threading
-import os
 
-# ✅ Use environment variables for deployment (e.g., Railway/Render)
-HOST = os.environ.get("HOST", "0.0.0.0")  # Bind to all interfaces
-PORT = int(os.environ.get("PORT", 12345))  # Default to 12345 if not set
+# ✅ Local testing configuration
+HOST = "0.0.0.0"  # Localhost only
+PORT = 28931        # Use a consistent, free port
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((HOST, PORT))
 server.listen()
-print(f"[STARTED] Server running on {HOST}:{PORT}")
+print(f"[STARTED] Server running locally on {HOST}:{PORT}")
 
 waiting_players = []
 games = []
@@ -25,7 +24,6 @@ class GameThread(threading.Thread):
     def run(self):
         print("[GAME] New game started between 2 players.")
 
-        # ✅ Send initial symbols to players
         try:
             self.players[0].sendall(b'X')
             self.players[1].sendall(b'O')
@@ -38,11 +36,11 @@ class GameThread(threading.Thread):
                 current = self.players[self.turn]
                 other = self.players[1 - self.turn]
 
-                current.sendall(b"YOUR_MOVE")  # Ask current player for move
+                current.sendall(b"YOUR_MOVE")
 
                 move_data = current.recv(1024)
                 if not move_data:
-                    break  # Client disconnected
+                    break
 
                 move = int(move_data.decode())
 
@@ -60,15 +58,14 @@ class GameThread(threading.Thread):
                             p.sendall(b"DRAW")
                         break
 
-                    self.turn = 1 - self.turn  # Switch turn
+                    self.turn = 1 - self.turn
                 else:
-                    current.sendall(b"INVALID")  # Invalid move
+                    current.sendall(b"INVALID")
 
             except Exception as e:
                 print(f"[ERROR] {e}")
                 break
 
-        # ✅ Clean up after game ends
         for p in self.players:
             try:
                 p.close()
@@ -90,7 +87,6 @@ def handle_new_connection(conn):
     with lock:
         waiting_players.append(conn)
 
-        # ✅ If only one player connected, notify them to wait
         if len(waiting_players) == 1:
             try:
                 conn.sendall(b"WAITING_FOR_OPPONENT")
@@ -98,7 +94,6 @@ def handle_new_connection(conn):
                 waiting_players.remove(conn)
                 return
 
-        # ✅ Start game when two players are ready
         if len(waiting_players) >= 2:
             p1 = waiting_players.pop(0)
             p2 = waiting_players.pop(0)
@@ -106,7 +101,6 @@ def handle_new_connection(conn):
             game.start()
             games.append(game)
 
-# ✅ Accept connections forever
 while True:
     conn, addr = server.accept()
     print(f"[CONNECTED] {addr}")
