@@ -3,7 +3,7 @@ import threading
 import os
 
 HOST = "0.0.0.0"
-PORT = int(os.environ.get("PORT", 28931))  # Railway will assign a port
+PORT = int(os.environ.get("PORT", 29845))  # Railway will assign a port
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((HOST, PORT))
