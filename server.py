@@ -1,14 +1,14 @@
 import socket
 import threading
+import os
 
-# ✅ Local testing configuration
-HOST = "0.0.0.0"  # Localhost only
-PORT = 28931        # Use a consistent, free port
+HOST = "0.0.0.0"
+PORT = int(os.environ.get("PORT", 28931))  # Railway will assign a port
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((HOST, PORT))
 server.listen()
-print(f"[STARTED] Server running locally on {HOST}:{PORT}")
+print(f"[STARTED] Server running on {HOST}:{PORT}")
 
 waiting_players = []
 games = []
@@ -19,11 +19,10 @@ class GameThread(threading.Thread):
         threading.Thread.__init__(self)
         self.players = [player1, player2]
         self.board = [' '] * 9
-        self.turn = 0  # 0 = player1, 1 = player2
+        self.turn = 0
 
     def run(self):
         print("[GAME] New game started between 2 players.")
-
         try:
             self.players[0].sendall(b'X')
             self.players[1].sendall(b'O')
@@ -37,7 +36,6 @@ class GameThread(threading.Thread):
                 other = self.players[1 - self.turn]
 
                 current.sendall(b"YOUR_MOVE")
-
                 move_data = current.recv(1024)
                 if not move_data:
                     break
@@ -61,7 +59,6 @@ class GameThread(threading.Thread):
                     self.turn = 1 - self.turn
                 else:
                     current.sendall(b"INVALID")
-
             except Exception as e:
                 print(f"[ERROR] {e}")
                 break
@@ -86,14 +83,12 @@ class GameThread(threading.Thread):
 def handle_new_connection(conn):
     with lock:
         waiting_players.append(conn)
-
         if len(waiting_players) == 1:
             try:
                 conn.sendall(b"WAITING_FOR_OPPONENT")
             except:
                 waiting_players.remove(conn)
                 return
-
         if len(waiting_players) >= 2:
             p1 = waiting_players.pop(0)
             p2 = waiting_players.pop(0)
